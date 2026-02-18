@@ -13,6 +13,6 @@ dbCon()
 app.use("/api", router);
 
 
-app.listen(PORT, ()=>{
+app.listen(PORT, () => {
     console.log(`server is runnig on ${PORT}`);
 })
