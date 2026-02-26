@@ -3,15 +3,13 @@
 
 const productSchema = require("../DB/DB_Product");
 
-
-
 async function postProduct(req, res) {
 
     try {
 
-        const { ProductName, BrandName, Category, Description, Price, StockQuantity, BatteryCapacity, DisplayType, StrapMaterial, WaterResistance, Warranty } = req.body
+        const { ProductName,BrandName, Category, Description, Price, StockQuantity, BatteryCapacity, DisplayType, StrapMaterial, WaterResistance, Warranty } = req.body
 
-        const AllProducts = { ProductName, BrandName, Category, Description, Price, StockQuantity, BatteryCapacity, DisplayType, StrapMaterial, WaterResistance, Warranty }
+        const AllProducts = { ProductName,BrandName, Category, Description, Price, StockQuantity, BatteryCapacity, DisplayType, StrapMaterial, WaterResistance, Warranty}
 
 
 
@@ -22,9 +20,8 @@ async function postProduct(req, res) {
             })
         }
         
-        const Products = await new productSchema(AllProducts).save()
-        
-        console.log(Products);
+        // console.log(AllProducts);
+        const Product = await new productSchema(AllProducts).save();
 
         return res.send({
 
@@ -46,10 +43,11 @@ async function getProduct(req, res) {
 
     try {
 
-        const get = await productSchema.findOne()
+        const get = await productSchema.find()
 
         return res.send({
 
+            get,
             status: 200,
             message: "Product Get Successfuly"
         })
@@ -103,6 +101,14 @@ async function deleteProduct(req, res) {
         const { id } = req.params;
         console.log(id);
 
+        const productsDelete = await productSchema.findByIdAndDelete(id)
+
+        if (!productsDelete){
+            return res.status(400).send({
+                message: "Product Not found"
+            })
+        }
+
         res.status(200).json({
             success: true,
             message: 'Product deleted successfully',
@@ -110,9 +116,9 @@ async function deleteProduct(req, res) {
 
     }
     catch (err) {
-        res.send({
-            status: 400,
-            message: "product not get"
+        return res.send({
+            status: 500,
+            message: `err ${err.message}`
         })
     }
 }

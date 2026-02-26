@@ -6,10 +6,11 @@ const { Schema } = mongoose
 
 const products = new Schema({
 
+    
     ProductName: {
         type: String,
         required: true
-
+        
     },
     BrandName: {
         type: String,
@@ -24,12 +25,12 @@ const products = new Schema({
     Description: {
         type: String,
         required: true
-
+        
     },
     Price: {
         type: Number,
         required: true
-
+        
     },
     StockQuantity: {
         type: Number,
@@ -49,18 +50,18 @@ const products = new Schema({
     DisplayType: {
         type: String,
         required: true
-
+        
     },
     StrapMaterial: {
         type: String,
         required: true
-
+        
     },
     WaterResistance: {
-
+        
         type: String,
         required: true
-
+        
     },
     Warranty: {
         type: String,
@@ -71,6 +72,6 @@ const products = new Schema({
 
 })
 
-const productSchema = mongoose.model("Products", products);
+const productSchema = mongoose.model("NewProducts", products);
 module.exports = productSchema;
 
