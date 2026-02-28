@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer")
 const dotenv = require("dotenv");
 dotenv.config();
 
-async function SendMail(token, email) {
+async function verifyEmail(token, email) {
 
     try {
         // Create a reusable transporter object using SMTP transport.
@@ -39,12 +39,16 @@ Thanks`, // Plaintext body.
 
         // Send email and log the response.
         const info = await transporter.sendMail(mailOptions);
-        res.status(200).json({ status: "success", message: "Email sent successfully" });
+        return res.status(200).json({ status: "success", message: "Email sent successfully" });
+
     } catch (err) {
-        res.send({
+
+        return res.send({
             status: 500,
             message: "user not authorized",
             err,
         });
     }
 }
+
+module.exports = verifyEmail
