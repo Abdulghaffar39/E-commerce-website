@@ -20,19 +20,10 @@ const authrization = async (req, res, next) => {
     try {
 
         const token = header.split(" ")[1];
-        jwt.verify(token, process.env.JWTSECRETKEY, (err, user) => {
+        jwt.verify(token, process.env.JWTSECRETKEY)
 
-            if (err) {
-                return res.send({
-
-                    status: 403,
-                    message: "forbidden"
-                })
-            }
-
-            req.user = decoded;
-            next();
-        });
+        req.user = decoded;
+        next();
 
     }
     catch (error) {
