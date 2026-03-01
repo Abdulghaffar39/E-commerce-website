@@ -1,7 +1,8 @@
-const User = require("../DB/UserModels")
+const User = require("../Models/userModels")
 const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 const verifyEmail = require("../emailVerify/verifyEmail");
+const { Session } = require("../Models/sessionModels");
 const saltRounds = 12;
 
 // { firstname, lastname, profilePic, ProfilePicPublicId, email, password, role, token, isVerified, isLoggedIn, Otp, otpExpiry, address, city, zipCode, phoneNo }
@@ -133,6 +134,8 @@ const verify = async (req, res) => {
             message: "user verify successfuly"
         })
 
+
+
     } catch (err) {
 
         return res.send({
@@ -178,7 +181,7 @@ const reVerify = async (req, res) => {
             err,
             status: 500,
             success: false,
-            message: `${err.message} + Not ReVerified ` ,
+            message: `${err.message} + Not ReVerified `,
         })
 
     }
@@ -198,18 +201,51 @@ async function login(req, res) {
             })
         }
 
-        bcrypt.compare(password, user.password, function (err, result) {
+        bcrypt.compare(password, user.password, async function (err, result) {
 
-            if(err){
+            if (err) {
                 console.log(err);
             }
-            if()
-            if (result){
+
+            if (!password) {
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid Credentials"
+                })
+            }
+
+            if (user.isVerified === false) {
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Verify your account than login"
+                })
+            }
+
+            if (result) {
+
+                const accessToken = jwt.sign({ id: user._id }, process.env.JWTSECRETKEY, { expires: "10d" })
+                const refreshToken = jwt.sign({ id: user._id }, process.env.JWTSECRETKEY, { expires: "30d" })
+
+                user.isLoggedIn = true;
+                await user.save()
+
+                const existingSession = await Session.findOne({userId: user._id})
+                if(existingSession){
+                    await Session.deleteOne({userId: user._id})
+                }
+
+                await Session.create({ userId: user._id })
+
 
                 return res.send({
-                    result,
+
                     status: 200,
-                    message: "Login Successfuly"
+                    message: `Wellcome back ${user.firstname}`,
+                    user,
+                    accessToken,
+                    refreshToken
                 })
             }
 
