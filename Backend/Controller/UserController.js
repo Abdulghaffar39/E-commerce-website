@@ -188,79 +188,95 @@ const reVerify = async (req, res) => {
 }
 
 async function login(req, res) {
+    console.log("Login function called");
+
+
     try {
 
         const { email, password } = req.body
-
         const user = await User.findOne({ email })
 
         if (!user) {
 
-            res.send({
-                message: "Invalid email"
+            return res.send({
+                status: 500,
+                message: "user not exits"
             })
         }
 
-        bcrypt.compare(password, user.password, async function (err, result) {
+        const isPasswordValid = await bcrypt.compare(password, user.password)
 
-            if (err) {
-                console.log(err);
-            }
+        if (!isPasswordValid) {
 
-            if (!password) {
+            return res.status(400).send({
+                success: false,
+                message: "Invalid Credentials"
+            })
+        }
 
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid Credentials"
-                })
-            }
+        if (user.isVerified === false) {
 
-            if (user.isVerified === false) {
+            return res.status(400).send({
+                success: false,
+                message: "Verify your account than login"
+            })
+        }
 
-                return res.status(400).json({
-                    success: false,
-                    message: "Verify your account than login"
-                })
-            }
+        // generate token
+        const accessToken = jwt.sign({ id: user._id }, process.env.JWTSECRETKEY, { expiresIn: "10m" })
+        const refreshToken = jwt.sign({ id: user._id }, process.env.JWTSECRETKEY, { expiresIn: "30d" })
+        console.log(accessToken);
 
-            if (result) {
+        user.isLoggedIn = true;
+        await user.save()
 
-                const accessToken = jwt.sign({ id: user._id }, process.env.JWTSECRETKEY, { expires: "10d" })
-                const refreshToken = jwt.sign({ id: user._id }, process.env.JWTSECRETKEY, { expires: "30d" })
+        console.log(user.isLoggedIn);
+        // check for existing session and delete it
+        const existingSession = await Session.findOne({ userId: user._id })
+        if (existingSession) {
+            await Session.deleteOne({ userId: user._id })
+        }
 
-                user.isLoggedIn = true;
-                await user.save()
+        // create a new session
+        await Session.create({ userId: user._id })
 
-                const existingSession = await Session.findOne({userId: user._id})
-                if(existingSession){
-                    await Session.deleteOne({userId: user._id})
-                }
-
-                await Session.create({ userId: user._id })
-
-
-                return res.send({
-
-                    status: 200,
-                    message: `Wellcome back ${user.firstname}`,
-                    user,
-                    accessToken,
-                    refreshToken
-                })
-            }
-
-
+        return res.status(200).send({
+            success: true,
+            message: `Welcome back ${user.firstname}`,
+            user,
+            accessToken,
+            refreshToken
         })
 
-
-    }
-    catch (err) {
-        res.send({
+    } catch (err) {
+        return res.send({
             status: 400,
-            message: "Login is not working"
+            message: `${err.message} Login is not working`,
+        })
+    }
+}
+
+async function logout(req, res) {
+    
+    try {
+
+        const userId = req.id
+        await Session.deleteMany({userId:userId})
+        await User.findByIdAndUpdate(userId, {isloggedIn: false})
+
+        return res.status(200).send({
+            success: true,
+            message: "User logged out successfully"
+        })
+      
+    } catch (err) {
+        return res.send({
+            status: 400,
+            message: `${err.message} Login is not working`,
         })
     }
 }
 
 
-module.exports = { register, verify, reVerify }
+
+module.exports = { register, verify, reVerify, login, logout }

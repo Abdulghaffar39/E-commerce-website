@@ -13,7 +13,7 @@ app.use(express.urlencoded({ extended: true }))
 
 dbCon()
 app.use("/api", router);
-app.use("/api", userRouter);
+app.use("/api/user", userRouter);
 
 
 app.listen(PORT, () => {
