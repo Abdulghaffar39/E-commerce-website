@@ -3,6 +3,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require('bcrypt');
 const verifyEmail = require("../emailVerify/verifyEmail");
 const { Session } = require("../Models/sessionModels");
+const sendOTPMail = require("../emailVerify/sendOtpMail");
+// const  sendOTPMail  = require("../emailVerify/sendOTPMail");
 const saltRounds = 12;
 
 // { firstname, lastname, profilePic, ProfilePicPublicId, email, password, role, token, isVerified, isLoggedIn, Otp, otpExpiry, address, city, zipCode, phoneNo }
@@ -257,18 +259,19 @@ async function login(req, res) {
 }
 
 async function logout(req, res) {
-    
+
     try {
 
         const userId = req.id
-        await Session.deleteMany({userId:userId})
-        await User.findByIdAndUpdate(userId, {isloggedIn: false})
+
+        await Session.deleteMany({ userId })
+        await User.findByIdAndUpdate(userId, { isLoggedIn: false })
 
         return res.status(200).send({
             success: true,
             message: "User logged out successfully"
         })
-      
+
     } catch (err) {
         return res.send({
             status: 400,
@@ -277,6 +280,42 @@ async function logout(req, res) {
     }
 }
 
+async function forgotPassword(req, res) {
 
+    try {
 
-module.exports = { register, verify, reVerify, login, logout }
+        const { email } = req.body
+
+        const user = await User.findOne({ email })
+
+        if (!user) {
+            res.send({
+                status: 401,
+                success: false,
+                message: `${err.message} email not find`
+            })
+        }
+
+        const otp = Math.flour(100000 + Math.random() * 900000).toString()
+        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000)
+
+        user.Otp = otp
+        user.otpExpiry = otpExpiry
+
+        await user.save()
+        await sendOTPMail(otp, email)
+
+        return res.status(200).send({
+            success: true,
+            message: "User logged out successfully"
+        })
+
+    } catch (err) {
+        return res.send({
+            status: 500,
+            message: `${err.message} not working`,
+        })
+    }
+}
+
+module.exports = { register, verify, reVerify, login, logout, forgotPassword }
