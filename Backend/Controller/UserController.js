@@ -287,7 +287,7 @@ async function forgotPassword(req, res) {
         const { email } = req.body
 
         const user = await User.findOne({ email })
-
+        
         if (!user) {
             res.send({
                 status: 401,
@@ -295,21 +295,23 @@ async function forgotPassword(req, res) {
                 message: `${err.message} email not find`
             })
         }
-
-        const otp = Math.flour(100000 + Math.random() * 900000).toString()
+        
+        const otp = Math.floor(100000 + Math.random() * 900000).toString()
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000)
-
+        
         user.Otp = otp
         user.otpExpiry = otpExpiry
-
+        
         await user.save()
         await sendOTPMail(otp, email)
-
+        
+        
+        
         return res.status(200).send({
             success: true,
             message: "User logged out successfully"
         })
-
+        
     } catch (err) {
         return res.send({
             status: 500,

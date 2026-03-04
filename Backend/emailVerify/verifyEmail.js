@@ -1,5 +1,5 @@
-const dotenv = require("dotenv");
 const nodemailer = require("nodemailer");
+const dotenv = require("dotenv");
 dotenv.config();
 
 async function verifyEmail(token, email) {
