@@ -319,4 +319,169 @@ async function forgotPassword(req, res) {
     }
 }
 
-module.exports = { register, verify, reVerify, login, logout, forgotPassword }
+async function verifyOTP(req, res) {
+
+    try {
+
+        const otp = req.body
+        const email = req.params.email
+
+        if (!otp) {
+            return res.status(400).send({
+                success: false,
+                message: "OTP is required"
+            })
+        }
+
+        const user = await User.findOne({ email })
+
+
+        if (!user) {
+            return res.status(400).send({
+                success: false,
+                message: "Email not found"
+            })
+        }
+
+        if (!user.Otp || !user.otpExpiry) {
+
+            return res.status(400).send({
+                success: false,
+                message: "OTP is generaded or already verified"
+            })
+        }
+
+        if (user.otpExpiry < new Date()) {
+
+            return res.status(400).send({
+                success: false,
+                message: "OTP has expired! Please request a new one"
+            })
+        }
+
+        if (otp.otp !== user.Otp) {
+
+            return res.status(400).send({
+                success: false,
+                message: "OTP is Invalid"
+            })
+        }
+
+        user.Otp = null
+        user.otpExpiry = null
+        await user.save()
+
+        return res.status(200).send({
+            success: true,
+            message: "OTP verified successfully"
+        })
+
+    } catch (err) {
+        return res.send({
+            status: 500,
+            message: `${err.message} not working`,
+        })
+    }
+}
+
+async function changePassword(req, res) {
+
+    try {
+
+        const { newPassword, confirmPassword } = req.body
+        const email = req.params.email
+        console.log(`Email params value ${email}`)
+
+        const user = await User.findOne({ email })
+
+        if (!user) {
+            return res.status(400).send({
+                success: false,
+                message: "Email not found"
+            })
+        }
+
+        if (!newPassword || !confirmPassword) {
+
+            return res.status(400).send({
+                success: false,
+                message: "All feild are required"
+            })
+        }
+
+        if (newPassword !== confirmPassword) {
+
+            return res.status(400).send({
+                success: false,
+                message: "Password do not match"
+            })
+        }
+
+        const hash = await bcrypt.hash(newPassword, saltRounds);
+        user.password = hash
+        await user.save()
+
+        return res.status(200).send({
+            success: true,
+            message: "Password change successfuly"
+        })
+
+
+
+    } catch (err) {
+        return res.send({
+            status: 500,
+            message: `${err.message} not working`,
+        })
+    }
+}
+
+async function allUsers(req, res) {
+
+    try {
+
+
+        const users = await User.find()
+
+        return res.status(200).send({
+            success: true,
+            users
+        })
+
+    } catch (err) {
+        return res.send({
+            status: 500,
+            message: `${err.message} not working`,
+        })
+    }
+}
+
+async function getUserById(req, res) {
+
+    try {
+
+
+        const { userId } = req.params
+        const user = await User.findById(userId).select("-password -otp -otpExpiry -token")
+
+        if (!user) {
+            return res.status(400).send({
+                success: false,
+                message: "User not found"
+            })
+        }
+
+        return res.status(200).send({
+            success: true,
+            user
+        })
+
+    } catch (err) {
+        return res.send({
+            status: 500,
+            message: `${err.message} not working`,
+        })
+    }
+}
+
+module.exports = { register, verify, reVerify, login, logout, forgotPassword, verifyOTP, changePassword, allUsers, getUserById }

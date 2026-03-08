@@ -1,0 +1,9 @@
+name: Ekart-YT
+values:
+  - key: accessToken
+    value: ''
+    enabled: true
+  - key: refreshToken
+    value: ''
+    enabled: true
+color: 0

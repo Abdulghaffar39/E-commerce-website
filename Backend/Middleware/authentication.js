@@ -44,6 +44,7 @@ const authrization = async (req, res, next) => {
                 message: "User not found"
             })
         }
+        req.user = user
         req.id = user._id
         next();
 
@@ -57,5 +58,17 @@ const authrization = async (req, res, next) => {
 
 }
 
+const isAdmin = (req, res, next) => {
 
-module.exports = authrization
+    if (req.user && req.user.role === "admin") {
+        next()
+    } else {
+        return res.status(403).json({
+            message: "Access denied: admins only "
+        })
+    }
+}
+
+
+
+module.exports = {authrization, isAdmin}
