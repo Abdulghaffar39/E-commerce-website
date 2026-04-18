@@ -21,6 +21,7 @@ async function verifyEmail(token, email) {
 Please follow the given link to verify your email
 http://localhost:5173/verify/${token}
 Thanks`};
+console.log(mailOptions);
 
     // Send email and log the response.
     transporter.sendMail(mailOptions, function (error, info) {

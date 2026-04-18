@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
-    ProfilePicPublicId: {
+    profilePicPublicId: {
         type: String,
         default: ""
     },

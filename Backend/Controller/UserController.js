@@ -4,8 +4,10 @@ const bcrypt = require('bcrypt');
 const verifyEmail = require("../emailVerify/verifyEmail");
 const { Session } = require("../Models/sessionModels");
 const sendOTPMail = require("../emailVerify/sendOtpMail");
-// const  sendOTPMail  = require("../emailVerify/sendOTPMail");
+const cloudinary = require("../utils/cloudinary");
 const saltRounds = 12;
+const streamifier = require('streamifier');
+
 
 // { firstname, lastname, profilePic, ProfilePicPublicId, email, password, role, token, isVerified, isLoggedIn, Otp, otpExpiry, address, city, zipCode, phoneNo }
 
@@ -243,11 +245,12 @@ async function login(req, res) {
         await Session.create({ userId: user._id })
 
         return res.status(200).send({
-            success: true,
-            message: `Welcome back ${user.firstname}`,
+
             user,
             accessToken,
-            refreshToken
+            refreshToken,
+            success: true,
+            message: `Welcome back ${user.firstname}`,
         })
 
     } catch (err) {
@@ -484,4 +487,111 @@ async function getUserById(req, res) {
     }
 }
 
-module.exports = { register, verify, reVerify, login, logout, forgotPassword, verifyOTP, changePassword, allUsers, getUserById }
+async function updateUser(req, res) {
+
+    try {
+
+        const userIdToUpdate = req.params.id
+        const loggedInUser = req.user
+        const { firstname, lastname, address, city, zipCode, phoneNo, role } = req.body
+
+        if (loggedInUser._id.toString() !== userIdToUpdate && loggedInUser.role !== "admin") {
+
+            return res.status(403).json({
+                success: false,
+                message: "You are not allowed to updata this profile"
+            })
+        }
+
+        let user = await User.findById(userIdToUpdate);
+        if (!user) {
+            return res.status(404).send({
+                success: false,
+                message: "User not found"
+            })
+        } 
+        console.log(user + "user line no 513");
+        
+
+        let profilePicUrl = user.profilePic;
+        let profilePicPublicId = user.profilePicPublicId
+
+        // console.log("req.file ", req.file, "line 522 backend");
+        console.log("profile pic ", profilePicPublicId, "line 522 backend");
+        if (req.file) {
+            if (profilePicPublicId) {
+                await cloudinary.uploader.destroy(profilePicPublicId)
+            }
+            
+            
+            console.log("Cloudinary config test:");
+            console.log("CLOUD_NAME:", process.env.CLOUD_NAME);
+            console.log("API_KEY:", process.env.API_KEY);
+            console.log("API_SECRET:", process.env.API_SECRET);
+
+            const uploadResult = await new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    { folder: "profiles" },
+                    (error, result) => {
+                        if (error) reject(error)
+                        else resolve(result)
+                    }
+                )
+                stream.end(req.file.buffer)
+            })
+            profilePicUrl = uploadResult.secure_url;
+            profilePicPublicId = uploadResult.public_id
+
+        }
+        
+        // update fields
+        user.firstname = firstname || user.firstname;
+        user.lastname = lastname || user.lastname;
+        user.address = address || user.address;
+        user.city = city || user.city;
+        user.zipCode = zipCode || user.zipCode;
+        user.phoneNo = phoneNo || user.phoneNo;
+        user.firstname = firstname || user.firstname;
+        user.role = role;
+        user.profilePic = profilePicUrl;
+        user.profilePicPublicId = profilePicPublicId;
+
+        const updatedUser = await user.save()
+        return res.status(200).send({
+            success: true,
+            message: "Profile Updata Successfuly",
+            user: updatedUser
+        })
+
+
+    } catch (err) {
+        return res.send({
+            status: 500,
+            message: `${err.message} not working`,
+        })
+    }
+}
+
+        // if (req.file) {
+        //     if (ProfilePicPublicId) {
+        //         await cloudinary.uploader.destroy(ProfilePicPublicId);
+        //     }
+
+        //     const uploadResult = await new Promise((resolve, reject) => {
+        //         const uploadStream = cloudinary.uploader.upload_stream(
+        //             { folder: "profiles" },
+        //             (error, result) => {
+        //                 if (error) reject(error);
+        //                 else resolve(result);
+        //             }
+        //         );
+
+        //         // buffer ko stream me convert kar ke pipe kar do
+        //         streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
+        //     });
+
+        //     profilePicUrl = uploadResult.secure_url;
+        //     ProfilePicPublicId = uploadResult.public_id;
+        // }
+
+module.exports = { register, verify, reVerify, login, logout, forgotPassword, verifyOTP, changePassword, allUsers, getUserById, updateUser }
